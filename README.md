@@ -178,7 +178,7 @@ This module includes comprehensive input validation:
 
 - **Account Name**: Must be 1-50 characters
 - **Email**: Must be a valid email address format or empty string
-- **Email Prefix**: Must contain only letters, numbers, dots, underscores, and hyphens
+- **Email Prefix**: Must contain only letters, numbers, dots, underscores, hyphens, and plus symbols
 - **Domain**: Must be a valid domain name format
 - **Parent ID**: Must be valid AWS Organizations root ID (`r-*`) or OU ID (`ou-*`)
 - **Role Name**: Must be 1-64 characters

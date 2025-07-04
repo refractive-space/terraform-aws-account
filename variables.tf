@@ -39,8 +39,8 @@ variable "email_prefix" {
   default     = ""
 
   validation {
-    condition     = var.email_prefix == "" || can(regex("^[a-zA-Z0-9._-]+$", var.email_prefix))
-    error_message = "Email prefix must contain only letters, numbers, dots, underscores, and hyphens."
+    condition     = var.email_prefix == "" || can(regex("^[a-zA-Z0-9._+-]+$", var.email_prefix))
+    error_message = "Email prefix must contain only letters, numbers, dots, underscores, hyphens, and plus symbols."
   }
 }
 
