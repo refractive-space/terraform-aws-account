@@ -1,8 +1,7 @@
 # Local values for account creation
 locals {
   # Generate email if not provided, using email_prefix and domain
-  email_local_part = var.email_prefix == "" ? random_uuid.name.id : var.email_prefix
-  email = var.email == "" ? "${local.email_local_part}@${var.domain}" : var.email
+  email = var.email == "" ? "${var.email_prefix}${random_uuid.name.id}@${var.domain}" : var.email
   # Generate name if not provided using random UUID
   name = var.name == "" ? random_uuid.name.id : var.name
 }
