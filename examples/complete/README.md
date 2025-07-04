@@ -24,7 +24,7 @@ This example demonstrates advanced usage of the terraform-aws-account module, sh
 - Separate email address
 
 ### 3. Sandbox Account
-- Auto-generated email using custom domain
+- Auto-generated email using custom prefix and domain
 - Minimal configuration for experimentation
 - Different backup policy
 
@@ -35,9 +35,14 @@ This example demonstrates advanced usage of the terraform-aws-account module, sh
 # Explicit email
 email = "prod-account@example.com"
 
-# Auto-generated with domain
-domain = "sandbox.example.com"
-# Results in: {random-uuid}@sandbox.example.com
+# Auto-generated with custom prefix
+email_prefix = "sandbox-team"
+domain       = "accounts.example.com"
+# Results in: sandbox-team@accounts.example.com
+
+# Auto-generated with random UUID
+domain = "accounts.example.com"
+# Results in: {random-uuid}@accounts.example.com
 ```
 
 ### Billing Access
@@ -122,7 +127,7 @@ Each account uses environment-specific role names:
 
 ### 4. Email Management
 - Production/Staging: Explicit emails for accountability
-- Sandbox: Auto-generated for temporary/experimental use
+- Sandbox: Auto-generated with custom prefix for organized naming
 
 ## Expected Outputs
 

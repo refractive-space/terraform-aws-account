@@ -11,12 +11,13 @@ variable "name" {
 
 # The email address for the AWS account
 variable "email" {
-  description = "The email address associated with the AWS account"
+  description = "The email address associated with the AWS account. If empty, will be auto-generated using email_prefix and domain"
   type        = string
+  default     = ""
   
   validation {
-    condition     = can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.email))
-    error_message = "Email must be a valid email address format."
+    condition     = var.email == "" || can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.email))
+    error_message = "Email must be a valid email address format or empty string."
   }
 }
 
@@ -31,11 +32,28 @@ variable "parent_id" {
   }
 }
 
-# Optional domain for the account email
-variable "domain" {
-  description = "Optional domain for the account email. If empty, the email will be used as-is"
+# Optional email prefix for auto-generated emails
+variable "email_prefix" {
+  description = "Optional prefix for auto-generated email addresses. If empty, will use random UUID"
   type        = string
   default     = ""
+
+  validation {
+    condition     = var.email_prefix == "" || can(regex("^[a-zA-Z0-9._-]+$", var.email_prefix))
+    error_message = "Email prefix must contain only letters, numbers, dots, underscores, and hyphens."
+  }
+}
+
+# Optional domain for the account email
+variable "domain" {
+  description = "Optional domain for auto-generated email addresses. Required when email is not provided"
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.domain == "" || can(regex("^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.domain))
+    error_message = "Domain must be a valid domain name format."
+  }
 }
 
 # IAM role name for cross-account access

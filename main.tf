@@ -1,9 +1,19 @@
 # Local values for account creation
 locals {
-  # Generate email if not provided, using domain if specified
-  email = var.email == "" ? "${random_uuid.name.id}@${var.domain}" : var.email
+  # Generate email if not provided, using email_prefix and domain
+  email_local_part = var.email_prefix == "" ? random_uuid.name.id : var.email_prefix
+  email = var.email == "" ? "${local.email_local_part}@${var.domain}" : var.email
   # Generate name if not provided using random UUID
   name = var.name == "" ? random_uuid.name.id : var.name
+}
+
+# Validation to ensure domain is provided when email is not provided
+resource "null_resource" "email_validation" {
+  count = var.email == "" && var.domain == "" ? 1 : 0
+
+  provisioner "local-exec" {
+    command = "echo 'Error: domain variable is required when email is not provided' && exit 1"
+  }
 }
 
 # Generate random UUID for unique naming when name/email not provided

@@ -63,9 +63,10 @@ module "production_account" {
 module "sandbox_account" {
   source = "your-org/account/aws"
   
-  name      = "Sandbox Account"
-  parent_id = "ou-1234567890abcdef0"
-  domain    = "sandbox.example.com"
+  name         = "Sandbox Account"
+  parent_id    = "ou-1234567890abcdef0"
+  email_prefix = "sandbox-dev"
+  domain       = "accounts.example.com"
   
   tags = {
     Environment = "Sandbox"
@@ -109,13 +110,16 @@ See the [examples](./examples) directory for more comprehensive usage patterns:
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.8.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0 |
+| <a name="requirement_null"></a> [null](#requirement\_null) | >= 3.0 |
+| <a name="requirement_random"></a> [random](#requirement\_random) | >= 3.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
-| <a name="provider_random"></a> [random](#provider\_random) | n/a |
+| <a name="provider_null"></a> [null](#provider\_null) | >= 3.0 |
+| <a name="provider_random"></a> [random](#provider\_random) | >= 3.0 |
 
 ## Modules
 
@@ -126,6 +130,7 @@ No modules.
 | Name | Type |
 |------|------|
 | [aws_organizations_account.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/organizations_account) | resource |
+| [null_resource.email_validation](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [random_uuid.name](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) | resource |
 
 ## Inputs
@@ -133,9 +138,10 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_name"></a> [name](#input\_name) | The name of the AWS account to create | `string` | n/a | yes |
-| <a name="input_email"></a> [email](#input\_email) | The email address associated with the AWS account | `string` | n/a | yes |
+| <a name="input_email"></a> [email](#input\_email) | The email address associated with the AWS account. If empty, will be auto-generated using email_prefix and domain | `string` | `""` | no |
 | <a name="input_parent_id"></a> [parent\_id](#input\_parent\_id) | The parent organizational unit ID or root ID where this account will be created | `string` | n/a | yes |
-| <a name="input_domain"></a> [domain](#input\_domain) | Optional domain for the account email. If empty, the email will be used as-is | `string` | `""` | no |
+| <a name="input_email_prefix"></a> [email\_prefix](#input\_email\_prefix) | Optional prefix for auto-generated email addresses. If empty, will use random UUID | `string` | `""` | no |
+| <a name="input_domain"></a> [domain](#input\_domain) | Optional domain for auto-generated email addresses. Required when email is not provided | `string` | `""` | no |
 | <a name="input_role_name"></a> [role\_name](#input\_role\_name) | The name of the IAM role to create for cross-account access | `string` | `"bootstrapper"` | no |
 | <a name="input_billing_access"></a> [billing\_access](#input\_billing\_access) | Whether to allow or deny billing access for the account | `string` | `"DENY"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to assign to all resources | `map(string)` | `{}` | no |
@@ -171,10 +177,13 @@ Before using this module, ensure you have:
 This module includes comprehensive input validation:
 
 - **Account Name**: Must be 1-50 characters
-- **Email**: Must be a valid email address format
+- **Email**: Must be a valid email address format or empty string
+- **Email Prefix**: Must contain only letters, numbers, dots, underscores, and hyphens
+- **Domain**: Must be a valid domain name format
 - **Parent ID**: Must be valid AWS Organizations root ID (`r-*`) or OU ID (`ou-*`)
 - **Role Name**: Must be 1-64 characters
 - **Billing Access**: Must be either "ALLOW" or "DENY"
+- **Email/Domain Dependency**: Domain is required when email is not provided
 
 ## Account Lifecycle Management
 
@@ -199,17 +208,25 @@ The module supports flexible email handling:
 email = "specific@example.com"
 ```
 
-### Auto-Generated Email with Domain
+### Auto-Generated Email with Custom Prefix
+```hcl
+email_prefix = "dev-team"
+domain       = "accounts.example.com"
+# Results in: dev-team@accounts.example.com
+```
+
+### Auto-Generated Email with Random UUID
 ```hcl
 domain = "accounts.example.com"
 # Results in: {random-uuid}@accounts.example.com
 ```
 
-### Fully Auto-Generated
-```hcl
-# Uses random UUID for both name and email
-# Results in: {random-uuid}@{domain} or {random-uuid} if no domain
-```
+### Email Generation Logic
+- If `email` is provided, it's used directly
+- If `email` is empty, auto-generation uses:
+  - `email_prefix` if provided, otherwise random UUID
+  - Combined with `domain` (required when email is empty)
+  - Final format: `{email_prefix|random-uuid}@{domain}`
 
 ## Common Use Cases
 

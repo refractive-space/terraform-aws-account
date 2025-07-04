@@ -60,13 +60,14 @@ module "staging_account" {
   }
 }
 
-# Example with auto-generated email using domain
+# Example with auto-generated email using custom prefix
 module "sandbox_account" {
   source = "../../"
 
-  name      = "Sandbox Account"
-  parent_id = "ou-1234567890abcdef0"  # Replace with your OU ID
-  domain    = "sandbox.example.com"   # Will generate random-uuid@sandbox.example.com
+  name         = "Sandbox Account"
+  parent_id    = "ou-1234567890abcdef0"  # Replace with your OU ID
+  email_prefix = "sandbox-team"
+  domain       = "accounts.example.com"  # Will generate sandbox-team@accounts.example.com
 
   tags = {
     Environment    = "Sandbox"
