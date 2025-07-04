@@ -1,11 +1,12 @@
 # The name of the AWS account to create
 variable "name" {
-  description = "The name of the AWS account to create"
+  description = "The name of the AWS account to create. If empty, will be auto-generated using random UUID"
   type        = string
-  
+  default     = ""
+
   validation {
-    condition     = length(var.name) > 0 && length(var.name) <= 50
-    error_message = "Account name must be between 1 and 50 characters."
+    condition     = var.name == "" || (length(var.name) > 0 && length(var.name) <= 50)
+    error_message = "Account name must be between 1 and 50 characters or empty string."
   }
 }
 

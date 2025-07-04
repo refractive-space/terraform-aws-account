@@ -137,7 +137,7 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_name"></a> [name](#input\_name) | The name of the AWS account to create | `string` | n/a | yes |
+| <a name="input_name"></a> [name](#input\_name) | The name of the AWS account to create. If empty, will be auto-generated using random UUID | `string` | `""` | no |
 | <a name="input_email"></a> [email](#input\_email) | The email address associated with the AWS account. If empty, will be auto-generated using email_prefix and domain | `string` | `""` | no |
 | <a name="input_parent_id"></a> [parent\_id](#input\_parent\_id) | The parent organizational unit ID or root ID where this account will be created | `string` | n/a | yes |
 | <a name="input_email_prefix"></a> [email\_prefix](#input\_email\_prefix) | Optional prefix for auto-generated email addresses. If empty, will use random UUID | `string` | `""` | no |
@@ -176,7 +176,7 @@ Before using this module, ensure you have:
 
 This module includes comprehensive input validation:
 
-- **Account Name**: Must be 1-50 characters
+- **Account Name**: Must be 1-50 characters or empty string
 - **Email**: Must be a valid email address format or empty string
 - **Email Prefix**: Must contain only letters, numbers, dots, underscores, hyphens, and plus symbols
 - **Domain**: Must be a valid domain name format
