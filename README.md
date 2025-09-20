@@ -13,6 +13,7 @@ A lightweight Terraform module for creating and managing AWS Organizations membe
 - ✅ **Email Management** - Flexible email handling with domain support
 - ✅ **Automatic Naming** - Generate unique names and emails when not provided
 - ✅ **Billing Control** - Configure billing access permissions
+- ✅ **Conditional Billing Control** - Optional AWS Budgets integration for cost monitoring and alerts
 - ✅ **Cross-Account Access** - Set up IAM roles for account management
 - ✅ **Input Validation** - Built-in validation for all inputs
 - ✅ **Lifecycle Management** - Prevent accidental account deletion
@@ -75,18 +76,77 @@ module "sandbox_account" {
 }
 ```
 
+### With Budget Control
+
+```hcl
+module "monitored_account" {
+  source = "your-org/account/aws"
+
+  name      = "Development Account"
+  email     = "dev-account@example.com"
+  parent_id = "ou-1234567890abcdef0"
+
+  # Enable budget for cost control
+  enable_budget       = true
+  budget_limit_amount = "500"
+  budget_time_unit    = "MONTHLY"
+
+  # Configure budget notifications
+  budget_notifications = [
+    {
+      comparison_operator        = "GREATER_THAN"
+      threshold                 = 80
+      threshold_type            = "PERCENTAGE"
+      notification_type          = "ACTUAL"
+      subscriber_email_addresses = ["billing-alerts@example.com"]
+      subscriber_sns_topic_arns  = []
+    }
+  ]
+
+  tags = {
+    Environment = "Development"
+    Team        = "Platform"
+  }
+}
+```
+
 ### Complete Example
 
 ```hcl
 module "compliance_account" {
   source = "your-org/account/aws"
-  
+
   name           = "Compliance Account"
   email          = "compliance@example.com"
   parent_id      = "ou-1234567890abcdef0"
   role_name      = "ComplianceRole"
   billing_access = "DENY"
-  
+
+  # Enable comprehensive budget monitoring
+  enable_budget       = true
+  budget_limit_amount = "1000"
+  budget_time_unit    = "MONTHLY"
+  budget_type         = "COST"
+
+  budget_notifications = [
+    {
+      comparison_operator        = "GREATER_THAN"
+      threshold                 = 75
+      threshold_type            = "PERCENTAGE"
+      notification_type          = "ACTUAL"
+      subscriber_email_addresses = ["finance@example.com", "compliance-team@example.com"]
+      subscriber_sns_topic_arns  = []
+    },
+    {
+      comparison_operator        = "GREATER_THAN"
+      threshold                 = 100
+      threshold_type            = "PERCENTAGE"
+      notification_type          = "FORECASTED"
+      subscriber_email_addresses = ["finance@example.com", "compliance-team@example.com"]
+      subscriber_sns_topic_arns  = []
+    }
+  ]
+
   tags = {
     Environment    = "Compliance"
     BusinessUnit   = "Legal"
@@ -129,6 +189,7 @@ No modules.
 
 | Name | Type |
 |------|------|
+| [aws_budgets_budget.account_budget](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/budgets_budget) | resource |
 | [aws_organizations_account.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/organizations_account) | resource |
 | [null_resource.email_validation](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [random_uuid.name](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) | resource |
@@ -145,6 +206,13 @@ No modules.
 | <a name="input_role_name"></a> [role\_name](#input\_role\_name) | The name of the IAM role to create for cross-account access | `string` | `"bootstrapper"` | no |
 | <a name="input_billing_access"></a> [billing\_access](#input\_billing\_access) | Whether to allow or deny billing access for the account | `string` | `"DENY"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to assign to all resources | `map(string)` | `{}` | no |
+| <a name="input_enable_budget"></a> [enable\_budget](#input\_enable\_budget) | Whether to enable billing budget for the account | `bool` | `false` | no |
+| <a name="input_budget_limit_amount"></a> [budget\_limit\_amount](#input\_budget\_limit\_amount) | The amount of cost or usage being measured for a budget | `string` | `"100"` | no |
+| <a name="input_budget_limit_unit"></a> [budget\_limit\_unit](#input\_budget\_limit\_unit) | The unit of measurement used for the budget forecast, actual spend, or budget threshold (USD for cost budgets) | `string` | `"USD"` | no |
+| <a name="input_budget_time_unit"></a> [budget\_time\_unit](#input\_budget\_time\_unit) | The length of time until a budget resets the actual and forecasted spend | `string` | `"MONTHLY"` | no |
+| <a name="input_budget_type"></a> [budget\_type](#input\_budget\_type) | Whether this budget tracks monetary cost or usage | `string` | `"COST"` | no |
+| <a name="input_budget_notifications"></a> [budget\_notifications](#input\_budget\_notifications) | List of notification configurations for the budget | `list(object({...}))` | `[]` | no |
+| <a name="input_budget_cost_filters"></a> [budget\_cost\_filters](#input\_budget\_cost\_filters) | Map of Cost Filter names and values for the budget | `map(list(string))` | `{}` | no |
 
 ## Outputs
 
@@ -158,6 +226,8 @@ No modules.
 | <a name="output_status"></a> [status](#output\_status) | The status of the AWS account |
 | <a name="output_joined_method"></a> [joined\_method](#output\_joined\_method) | The method by which the account joined the organization |
 | <a name="output_joined_timestamp"></a> [joined\_timestamp](#output\_joined\_timestamp) | The timestamp when the account joined the organization |
+| <a name="output_budget_name"></a> [budget\_name](#output\_budget\_name) | The name of the budget (if enabled) |
+| <a name="output_budget_arn"></a> [budget\_arn](#output\_budget\_arn) | The ARN of the budget (if enabled) |
 
 ## Prerequisites
 
@@ -240,10 +310,13 @@ Provide isolated AWS accounts for different teams or projects.
 Create accounts with specific configurations for regulatory compliance.
 
 ### 4. Cost Management
-Separate accounts for better cost tracking and billing management.
+Separate accounts for better cost tracking and billing management with optional budget controls.
 
 ### 5. Security Boundaries
 Use account-level isolation as a security boundary between workloads.
+
+### 6. Billing Control and Monitoring
+Set up automated cost monitoring with configurable budget alerts and notifications.
 
 ## Security Considerations
 
@@ -251,6 +324,8 @@ Use account-level isolation as a security boundary between workloads.
 2. **IAM Roles**: Use consistent role names across accounts for easier management
 3. **Billing Access**: Carefully consider who needs billing access in each account
 4. **Tags**: Use tags consistently for cost allocation and access control
+5. **Budget Notifications**: Ensure budget notification emails are sent to appropriate stakeholders
+6. **Cost Filters**: Use budget cost filters to monitor specific services or resources
 
 ## Troubleshooting
 

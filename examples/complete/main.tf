@@ -12,7 +12,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Complete account creation with all options
+# Complete account creation with all options including budget
 module "production_account" {
   source = "../../"
 
@@ -21,6 +21,40 @@ module "production_account" {
   parent_id      = "ou-1234567890abcdef0"  # Replace with your OU ID
   role_name      = "ProductionAdminRole"
   billing_access = "ALLOW"
+
+  # Enable comprehensive budget monitoring for production
+  enable_budget       = true
+  budget_limit_amount = "10000"
+  budget_time_unit    = "MONTHLY"
+  budget_type         = "COST"
+
+  # Multi-tier notification system for production
+  budget_notifications = [
+    {
+      comparison_operator        = "GREATER_THAN"
+      threshold                 = 50
+      threshold_type            = "PERCENTAGE"
+      notification_type          = "ACTUAL"
+      subscriber_email_addresses = ["finance@example.com", "platform-team@example.com"]
+      subscriber_sns_topic_arns  = []
+    },
+    {
+      comparison_operator        = "GREATER_THAN"
+      threshold                 = 75
+      threshold_type            = "PERCENTAGE"
+      notification_type          = "ACTUAL"
+      subscriber_email_addresses = ["finance@example.com", "platform-team@example.com", "exec-team@example.com"]
+      subscriber_sns_topic_arns  = []
+    },
+    {
+      comparison_operator        = "GREATER_THAN"
+      threshold                 = 90
+      threshold_type            = "PERCENTAGE"
+      notification_type          = "FORECASTED"
+      subscriber_email_addresses = ["finance@example.com", "platform-team@example.com", "exec-team@example.com"]
+      subscriber_sns_topic_arns  = []
+    }
+  ]
 
   tags = {
     Environment    = "Production"
