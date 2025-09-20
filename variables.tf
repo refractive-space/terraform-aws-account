@@ -87,3 +87,92 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# Budget configuration for conditional billing control
+variable "enable_budget" {
+  description = "Whether to enable billing budget for the account"
+  type        = bool
+  default     = false
+}
+
+variable "budget_limit_amount" {
+  description = "The amount of cost or usage being measured for a budget"
+  type        = string
+  default     = "100"
+}
+
+variable "budget_limit_unit" {
+  description = "The unit of measurement used for the budget forecast, actual spend, or budget threshold (USD for cost budgets)"
+  type        = string
+  default     = "USD"
+
+  validation {
+    condition     = contains(["USD"], var.budget_limit_unit)
+    error_message = "Budget limit unit must be USD for cost budgets."
+  }
+}
+
+variable "budget_time_unit" {
+  description = "The length of time until a budget resets the actual and forecasted spend"
+  type        = string
+  default     = "MONTHLY"
+
+  validation {
+    condition     = contains(["DAILY", "MONTHLY", "QUARTERLY", "ANNUALLY"], var.budget_time_unit)
+    error_message = "Budget time unit must be one of: DAILY, MONTHLY, QUARTERLY, ANNUALLY."
+  }
+}
+
+variable "budget_type" {
+  description = "Whether this budget tracks monetary cost or usage"
+  type        = string
+  default     = "COST"
+
+  validation {
+    condition     = contains(["USAGE", "COST", "RI_UTILIZATION", "RI_COVERAGE", "SAVINGS_PLANS_UTILIZATION", "SAVINGS_PLANS_COVERAGE"], var.budget_type)
+    error_message = "Budget type must be one of: USAGE, COST, RI_UTILIZATION, RI_COVERAGE, SAVINGS_PLANS_UTILIZATION, SAVINGS_PLANS_COVERAGE."
+  }
+}
+
+variable "budget_notifications" {
+  description = "List of notification configurations for the budget"
+  type = list(object({
+    comparison_operator   = string
+    threshold            = number
+    threshold_type       = string
+    notification_type    = string
+    subscriber_email_addresses = list(string)
+    subscriber_sns_topic_arns   = list(string)
+  }))
+  default = []
+
+  validation {
+    condition = alltrue([
+      for notification in var.budget_notifications :
+      contains(["GREATER_THAN", "LESS_THAN", "EQUAL_TO"], notification.comparison_operator)
+    ])
+    error_message = "Budget notification comparison_operator must be one of: GREATER_THAN, LESS_THAN, EQUAL_TO."
+  }
+
+  validation {
+    condition = alltrue([
+      for notification in var.budget_notifications :
+      contains(["PERCENTAGE", "ABSOLUTE_VALUE"], notification.threshold_type)
+    ])
+    error_message = "Budget notification threshold_type must be one of: PERCENTAGE, ABSOLUTE_VALUE."
+  }
+
+  validation {
+    condition = alltrue([
+      for notification in var.budget_notifications :
+      contains(["ACTUAL", "FORECASTED"], notification.notification_type)
+    ])
+    error_message = "Budget notification notification_type must be one of: ACTUAL, FORECASTED."
+  }
+}
+
+variable "budget_cost_filters" {
+  description = "Map of Cost Filter names and values for the budget"
+  type        = map(list(string))
+  default     = {}
+}

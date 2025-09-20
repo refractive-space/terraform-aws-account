@@ -45,3 +45,14 @@ output "joined_timestamp" {
   description = "The timestamp when the account joined the organization"
   value       = aws_organizations_account.this.joined_timestamp
 }
+
+# Budget outputs (conditional)
+output "budget_name" {
+  description = "The name of the budget (if enabled)"
+  value       = var.enable_budget ? aws_budgets_budget.account_budget[0].name : null
+}
+
+output "budget_arn" {
+  description = "The ARN of the budget (if enabled)"
+  value       = var.enable_budget ? aws_budgets_budget.account_budget[0].arn : null
+}
