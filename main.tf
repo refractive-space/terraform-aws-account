@@ -55,8 +55,14 @@ resource "aws_budgets_budget" "account_budget" {
   time_unit    = var.budget_time_unit
   time_period_start = formatdate("YYYY-MM-01_00:00", timestamp())
 
-  cost_filters = length(var.budget_cost_filters) > 0 ? var.budget_cost_filters : {
-    LinkedAccount = [aws_organizations_account.this.id]
+  dynamic "cost_filter" {
+    for_each = length(var.budget_cost_filters) > 0 ? var.budget_cost_filters : {
+      LinkedAccount = [aws_organizations_account.this.id]
+    }
+    content {
+      name   = cost_filter.key
+      values = cost_filter.value
+    }
   }
 
   dynamic "notification" {
