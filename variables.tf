@@ -144,16 +144,7 @@ variable "budget_notifications" {
     subscriber_email_addresses = list(string)
     subscriber_sns_topic_arns  = list(string)
   }))
-  default = [
-    {
-      comparison_operator        = "GREATER_THAN"
-      threshold                  = 80
-      threshold_type             = "PERCENTAGE"
-      notification_type          = "ACTUAL"
-      subscriber_email_addresses = []
-      subscriber_sns_topic_arns  = []
-    }
-  ]
+  default = []
 
   validation {
     condition = alltrue([
@@ -178,6 +169,21 @@ variable "budget_notifications" {
     ])
     error_message = "Budget notification notification_type must be one of: ACTUAL, FORECASTED."
   }
+}
+
+locals {
+  default_budget_notification = {
+    comparison_operator        = "GREATER_THAN"
+    threshold                  = 80
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "ACTUAL"
+    subscriber_email_addresses = []
+    subscriber_sns_topic_arns  = []
+  }
+
+  merged_budget_notifications = [
+    for notification in var.budget_notifications : merge(local.default_budget_notification, notification)
+  ]
 }
 
 variable "budget_cost_filters" {
