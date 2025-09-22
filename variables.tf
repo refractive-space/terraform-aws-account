@@ -137,14 +137,23 @@ variable "budget_type" {
 variable "budget_notifications" {
   description = "List of notification configurations for the budget"
   type = list(object({
-    comparison_operator   = string
-    threshold            = number
-    threshold_type       = string
-    notification_type    = string
+    comparison_operator        = string
+    threshold                  = number
+    threshold_type             = string
+    notification_type          = string
     subscriber_email_addresses = list(string)
-    subscriber_sns_topic_arns   = list(string)
+    subscriber_sns_topic_arns  = list(string)
   }))
-  default = []
+  default = [
+    {
+      comparison_operator        = "GREATER_THAN"
+      threshold                  = 80
+      threshold_type             = "PERCENTAGE"
+      notification_type          = "ACTUAL"
+      subscriber_email_addresses = []
+      subscriber_sns_topic_arns  = []
+    }
+  ]
 
   validation {
     condition = alltrue([
