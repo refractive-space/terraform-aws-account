@@ -26,6 +26,7 @@ resource "aws_organizations_account" "this" {
   parent_id                  = var.parent_id
   role_name                  = var.role_name
 
+
   # Apply tags to the account
   tags = var.tags
 
@@ -38,6 +39,7 @@ resource "aws_organizations_account" "this" {
       name,
       role_name,
     ]
+
 
     # Prevent accidental deletion of the account
     prevent_destroy = true
