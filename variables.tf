@@ -137,38 +137,29 @@ variable "budget_type" {
 variable "budget_notifications" {
   description = "List of notification configurations for the budget"
   type = list(object({
-    comparison_operator   = string
-    threshold            = number
-    threshold_type       = string
-    notification_type    = string
-    subscriber_email_addresses = list(string)
-    subscriber_sns_topic_arns   = list(string)
+    comparison_operator        = optional(string, "GREATER_THAN")
+    threshold                  = optional(number, 80)
+    threshold_type             = optional(string, "PERCENTAGE")
+    notification_type          = optional(string, "ACTUAL")
+    subscriber_email_addresses = optional(list(string), [])
+    subscriber_sns_topic_arns  = optional(list(string), [])
   }))
   default = []
+}
 
-  validation {
-    condition = alltrue([
-      for notification in var.budget_notifications :
-      contains(["GREATER_THAN", "LESS_THAN", "EQUAL_TO"], notification.comparison_operator)
-    ])
-    error_message = "Budget notification comparison_operator must be one of: GREATER_THAN, LESS_THAN, EQUAL_TO."
+locals {
+  default_budget_notification = {
+    comparison_operator        = "GREATER_THAN"
+    threshold                  = 80
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "ACTUAL"
+    subscriber_email_addresses = []
+    subscriber_sns_topic_arns  = []
   }
 
-  validation {
-    condition = alltrue([
-      for notification in var.budget_notifications :
-      contains(["PERCENTAGE", "ABSOLUTE_VALUE"], notification.threshold_type)
-    ])
-    error_message = "Budget notification threshold_type must be one of: PERCENTAGE, ABSOLUTE_VALUE."
-  }
-
-  validation {
-    condition = alltrue([
-      for notification in var.budget_notifications :
-      contains(["ACTUAL", "FORECASTED"], notification.notification_type)
-    ])
-    error_message = "Budget notification notification_type must be one of: ACTUAL, FORECASTED."
-  }
+  merged_budget_notifications = [
+    for notification in var.budget_notifications : merge(local.default_budget_notification, notification)
+  ]
 }
 
 variable "budget_cost_filters" {

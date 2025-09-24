@@ -50,12 +50,13 @@ resource "aws_organizations_account" "this" {
 resource "aws_budgets_budget" "account_budget" {
   count = var.enable_budget ? 1 : 0
 
-  name       = "${local.name}-budget"
-  budget_type = var.budget_type
-  limit_amount = var.budget_limit_amount
-  limit_unit   = var.budget_limit_unit
-  time_unit    = var.budget_time_unit
+  name = "${local.name}-budget"
+
+  budget_type       = var.budget_type
+  limit_amount      = var.budget_limit_amount
+  limit_unit        = var.budget_limit_unit
   time_period_start = formatdate("YYYY-MM-01_00:00", timestamp())
+  time_unit         = var.budget_time_unit
 
   dynamic "cost_filter" {
     for_each = length(var.budget_cost_filters) > 0 ? var.budget_cost_filters : {
@@ -68,12 +69,12 @@ resource "aws_budgets_budget" "account_budget" {
   }
 
   dynamic "notification" {
-    for_each = var.budget_notifications
+    for_each = local.merged_budget_notifications
     content {
       comparison_operator        = notification.value.comparison_operator
-      threshold                 = notification.value.threshold
-      threshold_type            = notification.value.threshold_type
-      notification_type         = notification.value.notification_type
+      threshold                  = notification.value.threshold
+      threshold_type             = notification.value.threshold_type
+      notification_type          = notification.value.notification_type
       subscriber_email_addresses = notification.value.subscriber_email_addresses
       subscriber_sns_topic_arns  = notification.value.subscriber_sns_topic_arns
     }
