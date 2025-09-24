@@ -56,3 +56,14 @@ output "budget_arn" {
   description = "The ARN of the budget (if enabled)"
   value       = var.enable_budget ? aws_budgets_budget.account_budget[0].arn : null
 }
+
+# Service budget outputs (conditional)
+output "service_budget_names" {
+  description = "Map of service budget names (if enabled)"
+  value       = var.enable_service_budgets ? { for k, v in aws_budgets_budget.service_budgets : k => v.name } : {}
+}
+
+output "service_budget_arns" {
+  description = "Map of service budget ARNs (if enabled)"
+  value       = var.enable_service_budgets ? { for k, v in aws_budgets_budget.service_budgets : k => v.arn } : {}
+}

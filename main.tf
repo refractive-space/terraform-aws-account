@@ -4,6 +4,95 @@ locals {
   email = var.email == "" ? "${var.email_prefix}${random_uuid.name.id}@${var.domain}" : var.email
   # Generate name if not provided using random UUID
   name = var.name == "" ? random_uuid.name.id : var.name
+
+  # Service name mapping to AWS service identifiers
+  service_mapping = {
+    # AI/ML Services
+    bedrock       = "Amazon Bedrock"
+    rekognition   = "Amazon Rekognition"
+    sagemaker     = "Amazon SageMaker"
+    textract      = "Amazon Textract"
+    comprehend    = "Amazon Comprehend"
+    translate     = "Amazon Translate"
+    polly         = "Amazon Polly"
+    lex           = "Amazon Lex"
+
+    # Compute Services
+    ec2           = "Amazon Elastic Compute Cloud - Compute"
+    ecs           = "Amazon EC2 Container Service"
+    eks           = "Amazon Elastic Kubernetes Service"
+    lambda        = "AWS Lambda"
+    batch         = "AWS Batch"
+    fargate       = "AWS Fargate"
+    lightsail     = "Amazon Lightsail"
+
+    # Storage Services
+    s3            = "Amazon Simple Storage Service"
+    ebs           = "Amazon Elastic Block Store"
+    efs           = "Amazon Elastic File System"
+    fsx           = "Amazon FSx"
+    glacier       = "Amazon Glacier"
+    backup        = "AWS Backup"
+
+    # Database Services
+    rds           = "Amazon Relational Database Service"
+    dynamodb      = "Amazon DynamoDB"
+    redshift      = "Amazon Redshift"
+    elasticache   = "Amazon ElastiCache"
+    documentdb    = "Amazon DocumentDB (with MongoDB compatibility)"
+    neptune       = "Amazon Neptune"
+    timestream    = "Amazon Timestream"
+
+    # Networking Services
+    vpc           = "Amazon Virtual Private Cloud"
+    cloudfront    = "Amazon CloudFront"
+    route53       = "Amazon Route 53"
+    elb           = "Elastic Load Balancing"
+    apigw         = "Amazon API Gateway"
+    directconnect = "AWS Direct Connect"
+
+    # Security Services
+    iam           = "AWS Identity and Access Management"
+    kms           = "AWS Key Management Service"
+    secrets       = "AWS Secrets Manager"
+    waf           = "AWS WAF"
+    shield        = "AWS Shield"
+    guardduty     = "Amazon GuardDuty"
+    inspector     = "Amazon Inspector"
+
+    # Monitoring & Management
+    cloudwatch    = "Amazon CloudWatch"
+    cloudtrail    = "AWS CloudTrail"
+    config        = "AWS Config"
+    xray          = "AWS X-Ray"
+    systems       = "AWS Systems Manager"
+
+    # Developer Tools
+    codebuild     = "AWS CodeBuild"
+    codedeploy    = "AWS CodeDeploy"
+    codepipeline  = "AWS CodePipeline"
+    codecommit    = "AWS CodeCommit"
+
+    # Analytics
+    athena        = "Amazon Athena"
+    emr           = "Amazon EMR"
+    kinesis       = "Amazon Kinesis"
+    glue          = "AWS Glue"
+    quicksight    = "Amazon QuickSight"
+
+    # Application Integration
+    sns           = "Amazon Simple Notification Service"
+    sqs           = "Amazon Simple Queue Service"
+    eventbridge   = "Amazon EventBridge"
+    stepfunctions = "AWS Step Functions"
+
+    # Other Services
+    ses           = "Amazon Simple Email Service"
+    workspaces    = "Amazon WorkSpaces"
+    connect       = "Amazon Connect"
+    chime         = "Amazon Chime"
+    pinpoint      = "Amazon Pinpoint"
+  }
 }
 
 # Validation to ensure domain is provided when email is not provided
@@ -70,6 +159,52 @@ resource "aws_budgets_budget" "account_budget" {
 
   dynamic "notification" {
     for_each = local.merged_budget_notifications
+    content {
+      comparison_operator        = notification.value.comparison_operator
+      threshold                  = notification.value.threshold
+      threshold_type             = notification.value.threshold_type
+      notification_type          = notification.value.notification_type
+      subscriber_email_addresses = notification.value.subscriber_email_addresses
+      subscriber_sns_topic_arns  = notification.value.subscriber_sns_topic_arns
+    }
+  }
+
+  depends_on = [aws_organizations_account.this]
+}
+
+# Create service-level budgets (if enabled)
+resource "aws_budgets_budget" "service_budgets" {
+  for_each = var.enable_service_budgets ? var.service_budgets : {}
+
+  name = "${local.name}-${each.key}-budget"
+
+  budget_type       = each.value.budget_type
+  limit_amount      = each.value.limit_amount
+  limit_unit        = each.value.limit_unit
+  time_period_start = formatdate("YYYY-MM-01_00:00", timestamp())
+  time_unit         = each.value.time_unit
+
+  # Filter by service and linked account
+  cost_filter {
+    name   = "LinkedAccount"
+    values = [aws_organizations_account.this.id]
+  }
+
+  cost_filter {
+    name   = "Service"
+    values = [local.service_mapping[each.key]]
+  }
+
+  # Add notifications if specified, otherwise use default
+  dynamic "notification" {
+    for_each = length(each.value.notifications) > 0 ? each.value.notifications : [{
+      comparison_operator        = "GREATER_THAN"
+      threshold                  = 80
+      threshold_type             = "PERCENTAGE"
+      notification_type          = "ACTUAL"
+      subscriber_email_addresses = []
+      subscriber_sns_topic_arns  = []
+    }]
     content {
       comparison_operator        = notification.value.comparison_operator
       threshold                  = notification.value.threshold

@@ -15,7 +15,7 @@ variable "email" {
   description = "The email address associated with the AWS account. If empty, will be auto-generated using email_prefix and domain"
   type        = string
   default     = ""
-  
+
   validation {
     condition     = var.email == "" || can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.email))
     error_message = "Email must be a valid email address format or empty string."
@@ -26,7 +26,7 @@ variable "email" {
 variable "parent_id" {
   description = "The parent organizational unit ID or root ID where this account will be created"
   type        = string
-  
+
   validation {
     condition     = can(regex("^(r-[0-9a-z]{4,32}|ou-[0-9a-z]{4,32}-[0-9a-z]{8,32})$", var.parent_id))
     error_message = "Parent ID must be a valid AWS Organizations root ID (r-) or organizational unit ID (ou-)."
@@ -62,7 +62,7 @@ variable "role_name" {
   description = "The name of the IAM role to create for cross-account access"
   type        = string
   default     = "bootstrapper"
-  
+
   validation {
     condition     = length(var.role_name) > 0 && length(var.role_name) <= 64
     error_message = "Role name must be between 1 and 64 characters."
@@ -74,7 +74,7 @@ variable "billing_access" {
   description = "Whether to allow or deny billing access for the account"
   type        = string
   default     = "DENY"
-  
+
   validation {
     condition     = contains(["ALLOW", "DENY"], var.billing_access)
     error_message = "Billing access must be either ALLOW or DENY."
@@ -166,4 +166,43 @@ variable "budget_cost_filters" {
   description = "Map of Cost Filter names and values for the budget"
   type        = map(list(string))
   default     = {}
+}
+
+# Service-level budget configuration
+variable "enable_service_budgets" {
+  description = "Whether to enable service-level budgets"
+  type        = bool
+  default     = false
+}
+
+variable "service_budgets" {
+  description = "Configuration for service-level budgets"
+  type = map(object({
+    limit_amount = string
+    limit_unit   = optional(string, "USD")
+    time_unit    = optional(string, "MONTHLY")
+    budget_type  = optional(string, "COST")
+    notifications = optional(list(object({
+      comparison_operator        = optional(string, "GREATER_THAN")
+      threshold                  = optional(number, 80)
+      threshold_type             = optional(string, "PERCENTAGE")
+      notification_type          = optional(string, "ACTUAL")
+      subscriber_email_addresses = optional(list(string), [])
+      subscriber_sns_topic_arns  = optional(list(string), [])
+    })), [])
+  }))
+  default = {
+    bedrock = {
+      limit_amount = "50"
+    }
+    dynamodb = {
+      limit_amount = "25"
+    }
+    lambda = {
+      limit_amount = "30"
+    }
+    s3 = {
+      limit_amount = "20"
+    }
+  }
 }
